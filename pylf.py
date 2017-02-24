@@ -68,7 +68,7 @@ def encode(data, ou):
         raise ValueError
 
 def encoder(data):
-    ou=[]
+    ou=[80,89,76,70,49,46,50,58] #PYLF1.2:
     encode(data,ou)
     return ou
 
@@ -98,7 +98,14 @@ def decoder(data):
     #data is a list of ascii values
     k=[] #holds all lists
     s="" #holds strings while being processed
-    for x in data:
+    if data[:8]!=[80,89,76,70,49,46,50,58]: #PYLF1.2:
+        #if this is not a good format, inform the user, and
+        #include the present version number
+        return ["INVALID FILE FORMAT","1.2"]
+    i=0
+    dataLen=len(data)
+    while i<dataLen:
+        x=data[i] #this is left over from when this was a for loop
         if x>20:
             #this was added increase speed, remove this if statement if editing this file
             s=s+chr(x)
@@ -142,6 +149,7 @@ def decoder(data):
             #just add to the stack
             #this bit only gets run if we have a value less than 20 and not a command character
             s=s+chr(x)
+        i=i+1 #this loop used to be a for loop, this was added after the conversion
     #it should have returned by now, but just to be sure
     return []
 
