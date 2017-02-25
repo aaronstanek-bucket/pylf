@@ -24,6 +24,40 @@
 #key, value, key, value, ...
 #sets are encoded exactly as lists, but 
 
+###########################
+
+#this code runs when the module is imported
+#it sets the version number, and precomputes the ASCII representation
+versionString="1.2" #update this when version changes
+version=[] #this is the ASCII version of versionString, with a colon at the end
+
+#version is computed from versionString in the following function
+
+def autorunWhenImported():
+    global versionString
+    global version
+    version=[80,89,76,84] #PYLT
+    for x in versionString:
+        version.append(ord(x))
+    version.append(ord(":"))
+
+autorunWhenImported()
+
+###########################
+
+def returnVersion():
+    #this function exsits because I will probably have to use this
+    #code in multiple places
+    global version
+    ou=version[:]
+    return ou
+
+def returnVersionString():
+    global versionString
+    return versionString
+
+###########################
+
 def encode_str(data, ou):
     #data is a string
     #not unicode compatible
@@ -68,7 +102,7 @@ def encode(data, ou):
         raise ValueError
 
 def encoder(data):
-    ou=[80,89,76,70,49,46,50,58] #PYLF1.2:
+    ou=returnVersion() #get a copy of the ASCII version information
     encode(data,ou)
     return ou
 
@@ -96,13 +130,15 @@ def decode_dict(data):
 
 def decoder(data):
     #data is a list of ascii values
+    ver=returnVersion() #ver is now a local copy of the version in ASCII numbers
     k=[] #holds all lists
     s="" #holds strings while being processed
-    if data[:8]!=[80,89,76,70,49,46,50,58]: #PYLF1.2:
+    if data[:len(ver)]!=ver: #checks to see if the version in the file is the same as the version here
         #if this is not a good format, inform the user, and
         #include the present version number
-        return ["INVALID FILE FORMAT","1.2"]
-    i=8 #this is dependent on version marking
+        return ["INVALID FILE FORMAT",returnVersionString()]
+    i=len(ver) #this is dependent on version marking
+    del(ver) #ver is not needed anymore in this function, might as well save space
     dataLen=len(data)
     while i<dataLen:
         x=data[i] #this is left over from when this was a for loop
