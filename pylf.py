@@ -64,6 +64,44 @@ def encode_str(data, ou):
     for x in data:
         ou.append(ord(x))
 
+def encode_str_unicode(data, ou):
+    #data is a string, potentially with unicode characters
+    #normal characters are encoded with ASCII
+    #nonstandad characters are encoded by unicode value
+    #the value will be split into 6 bit chunks
+    #each chunk will be save into a byte
+    #all of these bytes will start with a 10
+    #except for the last byte which will start with 11
+    for x in data:
+        ox=ord(x)
+        special=True
+        if ox<127:
+            if ox>31:
+                special=False
+        #if special is False, then we can just use ASCII encoding
+        #if sepcial is True, then we have to do other stuff (unicode, but not UTF8)
+        if special==False:
+            ou.append(ox)
+        elif ox==0:
+            ou.append(192) #1100 0000
+        else:
+            k=[] #store values, here each 6 bits worth, encoded least significant first
+            t=ox
+            while t!=0:
+                k.append(int(t%64))
+                t=int(t/64)
+            kLen=len(k)
+            i=0
+            while i<kLen:
+                k[i]=k[i]+128 #1000 0000
+                i=i+1
+            k[0]=k[0]+64 #this will become the last character
+            i=kLen-1
+            while i>=0:
+                ou.append(k[i])
+                i=i-1
+    #no return necessary
+
 def encode(data, ou):
     #data is a list, int, float, bool, string
     t=type(data)
@@ -80,7 +118,7 @@ def encode(data, ou):
             encode_str("F",ou)
         ou.append(3)
     elif t==str:
-        encode_str(data,ou)
+        encode_str_unicode(data,ou)
         ou.append(4)
     elif t==list:
         ou.append(17)
@@ -128,6 +166,25 @@ def decode_dict(data):
         ou[key]=value
     return ou
 
+def decode_str_unicode(data):
+    #data is a mangled string
+    j=[]
+    for x in data:
+        j.append(ord(x))
+    v=0 #stores the value of a character
+    s=""
+    for x in j:
+        if x<128:
+            s=s+chr(x)
+        else:
+            if x>=192: #starts with 11
+                v=(v*64)+x-192
+                s=s+chr(v)
+                v=0
+            else: #starts with 10
+                v=(v*64)+x-128
+    return s
+
 def decoder(data):
     #data is a list of ascii values
     ver=returnVersion() #ver is now a local copy of the version in ASCII numbers
@@ -145,13 +202,13 @@ def decoder(data):
         if x>20:
             #this was added increase speed, remove this if statement if editing this file
             s=s+chr(x)
-        elif x==1:
+        elif x==1: #int
             k[-1].append(int(s))
             s=""
-        elif x==2:
+        elif x==2: #float
             k[-1].append(float(s))
             s=""
-        elif x==3:
+        elif x==3: #bool
             if s=="T":
                 k[-1].append(True)
             elif s=="F":
@@ -159,13 +216,12 @@ def decoder(data):
             else:
                 raise ValueError
             s=""
-        elif x==4:
-            k[-1].append(s)
+        elif x==4: #string
+            k[-1].append(decode_str_unicode(s))
             s=""
-        elif x==17:
+        elif x==17: #new container
             k.append([])
-        elif x==18:
-            #end of list
+        elif x==18: #end list
             if len(k)==0:
                 return []
             if len(k)==1:
@@ -173,12 +229,10 @@ def decoder(data):
             #hop list down a level
             k[-2].append(k[-1])
             k.pop()
-        elif x==19:
-            #end of dict
+        elif x==19: #end dict
             k[-2].append(decode_dict(k[-1]))
             k.pop()
-        elif x==20:
-            #end of set
+        elif x==20: #end set
             k[-2].append(set(k[-1]))
             k.pop()
         else:
