@@ -36,7 +36,7 @@ version=[] #this is the ASCII version of versionString, with a colon at the end
 def autorunWhenImported():
     global versionString
     global version
-    version=[80,89,76,84] #PYLT
+    version=[80,89,76,70] #PYLT
     for x in versionString:
         version.append(ord(x))
     version.append(ord(":"))
