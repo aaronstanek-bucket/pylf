@@ -102,7 +102,7 @@ def decoder(data):
         #if this is not a good format, inform the user, and
         #include the present version number
         return ["INVALID FILE FORMAT","1.2"]
-    i=0
+    i=8 #this is dependent on version marking
     dataLen=len(data)
     while i<dataLen:
         x=data[i] #this is left over from when this was a for loop
